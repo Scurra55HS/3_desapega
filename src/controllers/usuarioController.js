@@ -113,7 +113,6 @@ export const register = async (request, response) => {
         });
     });
 };
-
 export const login = (request, response) => {
     const { email, senha } = request.body;
 
@@ -158,12 +157,12 @@ export const login = (request, response) => {
         }
     });
 };
-
 //CheckUser -> verificar os usuários logado na aplicação
 export const checkUser = async (request, response) => {
     let usuarioAtual;
-    
+    console.log(request.headers.authorization)
     if(request.headers.authorization){
+        
         //extrair o token -> barear TOKEN
         const token = getToken(request)
         console.log(token);
@@ -188,11 +187,40 @@ export const checkUser = async (request, response) => {
         response.status(200).json(usuarioAtual)
     }
 }
-
 //getUserById -> verificar usuário
-export const getUserById = async (request, response) => {}
+export const getUserById = async (request, response) => {
+    const id = request.params.id;
+
+    const checkSql = /*sql*/ `SELECT usuario_id, nome, email, telefone, imagem FROM usuarios WHERE ?? = ?`
+    const checkSqlData = ["usuario_id", id]
+    conn.query(checkSql, checkSqlData, (err, data) => {
+        if(err){
+            console.error(err);
+            response.status(500).json({message: "Erro ao buscar usuário"})
+            return
+        }
+
+        if(data.length === 0){
+            response.status(404).json({message: "Usuário não encontrado"})
+            return
+        }
+        
+        const usuario = data[0]
+        response.status(200).json(usuario)
+    })
+}
 //editUser -> Controlador Protegido, contém imagem de usuário
-export const editUser = async (request, response) => {}
+export const editUser = async (request, response) => {
+    const {id} = request.params
+
+    try {
+        const token = getToken(request)
+        const user = await getUserByToken(token)
+        
+    } catch (error) {
+        
+    }
+}
 
 
 //! Prova prática: dividida em 3 dias. 30/09 02/10 04/10
