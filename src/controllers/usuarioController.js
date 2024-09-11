@@ -8,55 +8,55 @@ import createUserToken from "../helpers/create-user-token.js";
 import getToken from "../helpers/get-token.js";
 
 export const register = async (request, response) => {
-    const {nome, email, telefone, senha, confirmaSenha} = request.body
+    const { nome, email, telefone, senha, confirmaSenha } = request.body
 
-    if(!nome){
+    if (!nome) {
         response.status(400).json({ message: "O Nome é obrigatório" });
         return;
     }
-    if(!email){
+    if (!email) {
         response.status(400).json({ message: "O Email é obrigatório" });
         return;
     }
-    if(!telefone){
+    if (!telefone) {
         response.status(400).json({ message: "O Telefone é obrigatório" });
         return;
     }
-    if(!senha){
+    if (!senha) {
         response.status(400).json({ message: "A senha é obrigatória" });
         return;
     }
-    if(!confirmaSenha){
+    if (!confirmaSenha) {
         response.status(400).json({ message: "A Confirmação da Senha é obrigatória" });
         return;
     }
     //? Verificar se o email é válido
-    if(!email.includes("@")){
+    if (!email.includes("@")) {
         response.status(409).json({ message: "O E-mail deve conter @ incluso" });
         return;
     }
 
     //? Senha === confirmaSenha
-    if(senha !== confirmaSenha){
+    if (senha !== confirmaSenha) {
         response.status(409).json({ message: "A Senha e a confirmação de senha devem ser iguais!" });
         return;
     }
 
     const checkSql = /*sql*/ `SELECT * FROM usuarios WHERE ?? = ?`
     const checkSqlData = ["email", email]
-    conn.query(checkSql, checkSqlData, async (err, data)=>{
-        if(err){
+    conn.query(checkSql, checkSqlData, async (err, data) => {
+        if (err) {
             console.error(err);
             response.status(500).json({ err: "Erro ao buscar email para cadastro." });
             return;
         }
 
         //? 2º Erro
-        if(data.length > 0){
+        if (data.length > 0) {
             response.status(409).json({ err: "O email já esta em uso" });
             return;
         }
-        
+
         //? Posso fazer o registro
         const salt = await bcrypt.genSalt(12)
         //* console.log(salt);
@@ -69,21 +69,21 @@ export const register = async (request, response) => {
         const usuario_img = "userDefault.png"
         const insertSql = /*sql*/ `INSERT INTO usuarios (??, ??, ??, ??, ??, ??) VALUES (?, ?, ?, ?, ?, ?)`
         const insertSqlData = [
-            "usuario_id", 
-            "nome", 
-            "email", 
-            "telefone", 
-            "senha", 
-            "imagem", 
-            id, 
-            nome, 
-            email, 
-            telefone, 
-            senhaHash, 
+            "usuario_id",
+            "nome",
+            "email",
+            "telefone",
+            "senha",
+            "imagem",
+            id,
+            nome,
+            email,
+            telefone,
+            senhaHash,
             usuario_img
         ]
-        conn.query(insertSql, insertSqlData, (err)=> {
-            if(err){
+        conn.query(insertSql, insertSqlData, (err) => {
+            if (err) {
                 console.error(err);
                 response.status(500).json({ err: "Erro ao cadastrar usuário" });
                 return;
@@ -93,9 +93,9 @@ export const register = async (request, response) => {
             const usuarioSql = /*sql*/ `SELECT * FROM usuarios WHERE ?? = ?`
             const usuarioData = ["usuario_id", id]
             conn.query(usuarioSql, usuarioData, async (err, data) => {
-                if(err){
+                if (err) {
                     console.error(err);
-                    response.status(500).json({err: "Erro ao fazer login"})
+                    response.status(500).json({ err: "Erro ao fazer login" })
                     return
                 }
                 const usuario = data[0]
@@ -104,11 +104,11 @@ export const register = async (request, response) => {
                     await createUserToken(usuario, request, response)
                 } catch (error) {
                     console.error(error);
-                    response.status(500).json({err: "Erro ao processar requisição"})
+                    response.status(500).json({ err: "Erro ao processar requisição" })
                 }
             })
-            
-            
+
+
             response.status(201).json({ message: "Usuário cadastrado" });
         });
     });
@@ -116,25 +116,25 @@ export const register = async (request, response) => {
 export const login = (request, response) => {
     const { email, senha } = request.body;
 
-    if(!email){
+    if (!email) {
         response.status(400).json({ message: "O Email é obrigatório" });
         return;
     }
-    if(!senha){
+    if (!senha) {
         response.status(400).json({ message: "A senha é obrigatória" });
         return;
     }
 
     const checkEmailSql = /*sql*/ `SELECT * FROM usuarios WHERE ?? = ?`
     const checkEmailData = ["email", email]
-    conn.query(checkEmailSql, checkEmailData, async (err, data)=> {
-        if(err){
+    conn.query(checkEmailSql, checkEmailData, async (err, data) => {
+        if (err) {
             console.error(err);
-            response.status(500).json({err: "Erro ao fazer login" })
+            response.status(500).json({ err: "Erro ao fazer login" })
             return;
         }
-        if(data.length === 0){
-            response.status(500).json({err: "E-mail não está cadastrado"})
+        if (data.length === 0) {
+            response.status(500).json({ err: "E-mail não está cadastrado" })
             return;
         }
 
@@ -144,16 +144,16 @@ export const login = (request, response) => {
         //? Comparar senhas
         const comparaSenha = await bcrypt.compare(senha, usuario.senha)
         console.log("Compara senha: ", comparaSenha);
-        if(!comparaSenha){
+        if (!comparaSenha) {
             response.status(401).json({ message: "Senha inválida" })
         }
 
         //1º Criar um token
         try {
-            await createUserToken (usuario, request, response)
+            await createUserToken(usuario, request, response)
         } catch (error) {
             console.error(error);
-            response.status(500).json({err: "Erro ao processar a informação"})
+            response.status(500).json({ err: "Erro ao processar a informação" })
         }
     });
 };
@@ -161,8 +161,8 @@ export const login = (request, response) => {
 export const checkUser = async (request, response) => {
     let usuarioAtual;
     console.log(request.headers.authorization)
-    if(request.headers.authorization){
-        
+    if (request.headers.authorization) {
+
         //extrair o token -> barear TOKEN
         const token = getToken(request)
         console.log(token);
@@ -174,7 +174,7 @@ export const checkUser = async (request, response) => {
         const selectSql = /*sql*/ `SELECT nome, email, telefone, imagem FROM usuarios WHERE ?? = ?`
         const selectData = ["usuario_id", usuarioId]
         conn.query(selectSql, selectData, (err, data) => {
-            if(err){
+            if (err) {
                 console.error(err);
                 response.status(500).json({ err: "Erro ao verificar usuário" })
                 return
@@ -182,7 +182,7 @@ export const checkUser = async (request, response) => {
             usuarioAtual = data[0]
             response.status(200).json(usuarioAtual)
         })
-    }else{
+    } else {
         usuarioAtual = null
         response.status(200).json(usuarioAtual)
     }
@@ -194,33 +194,78 @@ export const getUserById = async (request, response) => {
     const checkSql = /*sql*/ `SELECT usuario_id, nome, email, telefone, imagem FROM usuarios WHERE ?? = ?`
     const checkSqlData = ["usuario_id", id]
     conn.query(checkSql, checkSqlData, (err, data) => {
-        if(err){
+        if (err) {
             console.error(err);
-            response.status(500).json({message: "Erro ao buscar usuário"})
+            response.status(500).json({ message: "Erro ao buscar usuário" })
             return
         }
 
-        if(data.length === 0){
-            response.status(404).json({message: "Usuário não encontrado"})
+        if (data.length === 0) {
+            response.status(404).json({ message: "Usuário não encontrado" })
             return
         }
-        
+
         const usuario = data[0]
         response.status(200).json(usuario)
     })
 }
 //editUser -> Controlador Protegido, contém imagem de usuário
 export const editUser = async (request, response) => {
-    const {id} = request.params
+    const { id } = request.params
 
     try {
         const token = getToken(request)
         const user = await getUserByToken(token)
-        
+
+        const { nome, email, telefone } = request.body;
+        let imagem = user.imagem
+        if (request.file) {
+            imagem = request.file.filename
+        }
+
+        if (!nome) {
+            return response.status(400).json({ message: "O nome é obrigatório" })
+        }
+        if (!email) {
+            return response.status(400).json({ message: "O E-mail é obrigatório" })
+        }
+        if (!telefone) {
+            return response.status(400).json({ message: "O telefone é obrigatório" })
+        }
+
+        // 1 - Verifica se o usuário existe
+        const checkSql = /*sql*/`SELECT * FROM usuarios WHERE ?? = ?`
+        const checkSqlData = ["usuario_id", id]
+        conn.query(checkSql, checkSqlData, (err, data) => {
+            if (err) {
+                return response.status(500).json("Erro ao verificar usuário para atualização.")
+            }
+            if (data.length === 0) {
+                return response.status(404).json("Usuário não encontrado")
+            }
+            // 2 - Verifica usuário com email repetido
+            const checkEmailSql = /*sql*/ `SELECT * FROM usuarios WHERE ?? = ? AND ?? !=?`
+            const checkEmailData = ["email", email]
+            conn.query(checkEmailSql, checkEmailData, (err, data) => {
+                if (err) {
+                    return response.status(500).json("Erro ao verificar usuário para atualização.")
+                }
+                if (data.length > 0) {
+                    return response.status(409).json("E-mail já está em uso!")
+                }
+                // 3 - Atualizar o usuário
+                const updateSql = /*sql*/ `UPDATE usuarios SET ? WHERE ?? = ?`
+                const updateData = [{ nome, email, telefone, imagem }, "usuario_id", id]
+                conn.query(updateData, updateSql, (err) => {
+                    if (err) {
+                        return response.status(500).json("Erro ao atualizar o usuário!")
+                    }
+                    response.status(200).json({ message: "Usuário Atualizado!!" })
+                })
+            })
+        })
     } catch (error) {
-        
+        console.log(error);
+        response.status(500).json("Erro interno do servidor...")
     }
 }
-
-
-//! Prova prática: dividida em 3 dias. 30/09 02/10 04/10
